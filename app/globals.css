@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+/*
+ * Sistema de diseño — Flota Tracker
+ * Usuario final principal (admin) tiene poco manejo de tecnología y
+ * probablemente vista cansada: priorizamos legibilidad y contraste alto
+ * por sobre estética minimalista. Un solo tema (sin modo oscuro) para
+ * mantener todo simple y predecible.
+ */
+@theme {
+  /* Paleta core */
+  --color-primary: #3e5c76;
+  --color-primary-hover: #2c4356;
+  --color-text: #1e293b;
+  --color-text-secondary: #45556c;
+  --color-bg: #f8fafc;
+  --color-bg-card: #ffffff;
+  --color-border: #cbd5e1;
+  --color-border-strong: #64748b;
+
+  /* Estados: verde / ámbar / rojo, elegidos para que además de distinguirse
+     por matiz, se distingan por luminosidad en escala de grises. Nunca se
+     usan solos — siempre van con ícono + texto (ver EstadoBadge). */
+  --color-success: #166534;
+  --color-success-bg: #dcfce7;
+  --color-warning: #a3450a;
+  --color-warning-bg: #fef3c7;
+  --color-danger: #b91c1c;
+  --color-danger-hover: #991b1b;
+  --color-danger-bg: #fee2e2;
+
+  /* Tipografía: Inter, escala en rem para respetar el zoom del navegador.
+     Base = 18px (1.125rem), nunca bajamos de 14px ni siquiera en metadata. */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, sans-serif;
+
+  --text-xs: 0.875rem;
+  --text-xs--line-height: 1.25rem;
+  --text-sm: 1rem;
+  --text-sm--line-height: 1.5rem;
+  --text-base: 1.125rem;
+  --text-base--line-height: 1.75rem;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.875rem;
+  --text-xl: 1.5rem;
+  --text-xl--line-height: 2rem;
+  --text-2xl: 1.875rem;
+  --text-2xl--line-height: 2.375rem;
+  --text-3xl: 2.25rem;
+  --text-3xl--line-height: 2.75rem;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--text-base--line-height);
+}

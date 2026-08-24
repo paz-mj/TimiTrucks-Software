@@ -53,7 +53,7 @@ create table public.documentos (
   vehiculo_id uuid not null references public.vehiculos(id) on delete cascade,
   tipo public.tipo_documento not null,
   archivo_url text not null,
-  fecha_vencimiento date,
+  fecha_vencimiento date not null,
   fecha_subida timestamptz not null default now(),
   subido_por uuid references public.profiles(id)
 );
@@ -116,7 +116,8 @@ create policy "admin ve perfiles de su empresa" on public.profiles
   for select using (public.my_rol() in ('admin','superadmin') and (empresa_id = public.my_empresa() or public.my_rol() = 'superadmin'));
 
 create policy "admin edita perfiles de su empresa" on public.profiles
-  for update using (public.my_rol() in ('admin','superadmin') and (empresa_id = public.my_empresa() or public.my_rol() = 'superadmin'));
+  for update using (public.my_rol() in ('admin','superadmin') and (empresa_id = public.my_empresa() or public.my_rol() = 'superadmin'))
+  with check (public.my_rol() = 'superadmin' or (public.my_rol() = 'admin' and empresa_id = public.my_empresa() and rol <> 'superadmin'));
 
 -- EMPRESAS
 create policy "superadmin ve todas las empresas" on public.empresas
@@ -148,9 +149,10 @@ create policy "admin gestiona vehiculos de su empresa" on public.vehiculos
     exists (select 1 from public.flotas f where f.id = flota_id and (f.empresa_id = public.my_empresa() or public.my_rol() = 'superadmin'))
   );
 
-create policy "conductor actualiza km de su vehiculo" on public.vehiculos
-  for update using (conductor_id = auth.uid())
-  with check (conductor_id = auth.uid());
+-- Nota: el conductor NO tiene policy de update directo sobre vehiculos.
+-- La actualizacion de km se hace exclusivamente via la funcion actualizar_km()
+-- (mas abajo), que es security definer y valida todo server-side. Asi evitamos
+-- que el conductor pueda editar patente, intervalo_mantencion_km, etc.
 
 -- DOCUMENTOS
 create policy "ver documentos segun acceso al vehiculo" on public.documentos
@@ -188,11 +190,10 @@ create policy "ver historial segun acceso al vehiculo" on public.km_historial
     )
   );
 
-create policy "conductor registra km de su vehiculo" on public.km_historial
-  for insert with check (
-    exists (select 1 from public.vehiculos v where v.id = vehiculo_id and v.conductor_id = auth.uid())
-  );
-
+-- Nota: no hay policy de insert para conductor. El registro de km (y su
+-- historial) se hace exclusivamente via la funcion actualizar_km() (mas abajo),
+-- que valida todo server-side y evita historiales desincronizados con
+-- vehiculos.km_actual.
 create policy "admin registra km" on public.km_historial
   for insert with check (
     public.my_rol() in ('admin','superadmin') and
@@ -209,5 +210,89 @@ create policy "admin ve notificaciones de su empresa" on public.notificaciones_l
     exists (
       select 1 from public.vehiculos v join public.flotas f on f.id = v.flota_id
       where v.id = vehiculo_id and (f.empresa_id = public.my_empresa() or public.my_rol() = 'superadmin')
+    )
+  );
+
+-- ============ RPC: actualizar_km ============
+-- Unico camino permitido para actualizar el kilometraje de un vehiculo.
+-- security definer: corre con permisos de postgres y hace su propia
+-- verificacion de autorizacion, por eso no depende de policies de RLS
+-- sobre vehiculos/km_historial para este flujo.
+create or replace function public.actualizar_km(p_vehiculo_id uuid, p_km int)
+returns void as $$
+declare
+  v_conductor_id uuid;
+  v_km_actual int;
+  v_autorizado boolean;
+begin
+  select conductor_id, km_actual into v_conductor_id, v_km_actual
+  from public.vehiculos where id = p_vehiculo_id;
+
+  if not found then
+    raise exception 'vehiculo no encontrado';
+  end if;
+
+  v_autorizado := (v_conductor_id = auth.uid())
+    or (
+      public.my_rol() in ('admin', 'superadmin')
+      and exists (
+        select 1 from public.vehiculos v join public.flotas f on f.id = v.flota_id
+        where v.id = p_vehiculo_id and (f.empresa_id = public.my_empresa() or public.my_rol() = 'superadmin')
+      )
+    );
+
+  if not v_autorizado then
+    raise exception 'no autorizado';
+  end if;
+
+  if p_km < v_km_actual then
+    raise exception 'el km ingresado (%) no puede ser menor al actual (%)', p_km, v_km_actual;
+  end if;
+
+  update public.vehiculos set km_actual = p_km where id = p_vehiculo_id;
+
+  insert into public.km_historial (vehiculo_id, km, usuario_id)
+  values (p_vehiculo_id, p_km, auth.uid());
+end;
+$$ language plpgsql security definer;
+
+revoke execute on function public.actualizar_km(uuid, int) from public, anon;
+grant execute on function public.actualizar_km(uuid, int) to authenticated;
+
+-- ============ STORAGE: bucket 'documentos' ============
+-- Convencion de path del objeto: {empresa_id}/{vehiculo_id}/{nombre_archivo}
+-- storage.foldername(name) devuelve las carpetas del path como un array de
+-- texto, por eso (storage.foldername(name))[1] es el empresa_id del objeto.
+-- Solo admin/superadmin de la empresa dueña de ese primer segmento puede
+-- leer/subir/eliminar. El bucket 'documentos' ya existe y es privado (se
+-- crea manualmente desde el dashboard de Supabase, no por SQL).
+
+create policy "admin lee documentos de su empresa" on storage.objects
+  for select using (
+    bucket_id = 'documentos'
+    and public.my_rol() in ('admin', 'superadmin')
+    and (
+      public.my_rol() = 'superadmin'
+      or (storage.foldername(name))[1] = public.my_empresa()::text
+    )
+  );
+
+create policy "admin sube documentos de su empresa" on storage.objects
+  for insert with check (
+    bucket_id = 'documentos'
+    and public.my_rol() in ('admin', 'superadmin')
+    and (
+      public.my_rol() = 'superadmin'
+      or (storage.foldername(name))[1] = public.my_empresa()::text
+    )
+  );
+
+create policy "admin elimina documentos de su empresa" on storage.objects
+  for delete using (
+    bucket_id = 'documentos'
+    and public.my_rol() in ('admin', 'superadmin')
+    and (
+      public.my_rol() = 'superadmin'
+      or (storage.foldername(name))[1] = public.my_empresa()::text
     )
   );
