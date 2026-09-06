@@ -9,6 +9,7 @@ export type TipoDocumento =
   | "revision_tecnica"
   | "seguro"
   | "otro";
+export type TipoMantencion = "mantencion" | "repuesto";
 
 export interface Database {
   public: {
@@ -157,6 +158,39 @@ export interface Database {
         };
         Relationships: [];
       };
+      mantenciones: {
+        Row: {
+          id: string;
+          vehiculo_id: string;
+          tipo: TipoMantencion;
+          descripcion: string;
+          km: number | null;
+          fecha: string;
+          registrado_por: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          vehiculo_id: string;
+          tipo: TipoMantencion;
+          descripcion: string;
+          km?: number | null;
+          fecha?: string;
+          registrado_por?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          vehiculo_id?: string;
+          tipo?: TipoMantencion;
+          descripcion?: string;
+          km?: number | null;
+          fecha?: string;
+          registrado_por?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       km_historial: {
         Row: {
           id: string;
@@ -227,6 +261,7 @@ export interface Database {
     Enums: {
       rol_usuario: RolUsuario;
       tipo_documento: TipoDocumento;
+      tipo_mantencion: TipoMantencion;
     };
   };
 }

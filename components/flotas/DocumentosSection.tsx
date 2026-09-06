@@ -35,7 +35,7 @@ export function DocumentosSection({
             return (
               <li
                 key={documento.id}
-                className="flex flex-col gap-2 rounded-md border-2 border-border p-3 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-2 rounded-md border border-border-subtle p-3 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
                   <p className="text-base font-medium text-text">{etiqueta}</p>

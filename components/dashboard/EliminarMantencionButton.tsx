@@ -2,21 +2,21 @@
 
 import { useActionState, useRef, useState } from "react";
 import { Trash2 } from "lucide-react";
-import { eliminarDocumento, type ActionState } from "@/app/dashboard/actions";
+import { eliminarMantencion, type ActionState } from "@/app/dashboard/actions";
 import { Button } from "@/components/ui/Button";
 import { FormError } from "@/components/ui/FormError";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 const initialState: ActionState = {};
 
-export function EliminarDocumentoButton({
-  documentoId,
-  etiqueta,
+export function EliminarMantencionButton({
+  mantencionId,
+  descripcion,
 }: {
-  documentoId: string;
-  etiqueta: string;
+  mantencionId: string;
+  descripcion: string;
 }) {
-  const eliminarConId = eliminarDocumento.bind(null, documentoId);
+  const eliminarConId = eliminarMantencion.bind(null, mantencionId);
   const [state, formAction, isPending] = useActionState(eliminarConId, initialState);
   const [confirmando, setConfirmando] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
@@ -43,8 +43,8 @@ export function EliminarDocumentoButton({
 
       <ConfirmDialog
         open={confirmando}
-        titulo="Eliminar documento"
-        descripcion={`¿Eliminar el documento "${etiqueta}"? Esta acción no se puede deshacer.`}
+        titulo="Eliminar registro"
+        descripcion={`¿Eliminar el registro "${descripcion}"? Esta acción no se puede deshacer.`}
         onConfirmar={confirmarEliminacion}
         onCancelar={() => setConfirmando(false)}
       />

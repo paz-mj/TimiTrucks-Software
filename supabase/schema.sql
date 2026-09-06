@@ -333,3 +333,49 @@ create policy "admin elimina fotos de su empresa" on storage.objects
       or (storage.foldername(name))[1] = public.my_empresa()::text
     )
   );
+
+-- ============ TABLA: mantenciones ============
+-- Historial combinado de mantenciones y repuestos por vehiculo (una sola
+-- tabla con columna `tipo`, no dos): un solo formulario, una sola lista.
+-- Registrar un 'mantencion' con km actualiza vehiculos.km_ultima_mantencion
+-- (y km_actual si corresponde) desde el server action, asi el aviso de
+-- mantencion proxima/vencida se resetea solo. Un 'repuesto' es un registro
+-- puramente historico, no toca el contador.
+create type public.tipo_mantencion as enum ('mantencion', 'repuesto');
+
+create table public.mantenciones (
+  id uuid primary key default uuid_generate_v4(),
+  vehiculo_id uuid not null references public.vehiculos(id) on delete cascade,
+  tipo public.tipo_mantencion not null,
+  descripcion text not null,
+  km int,
+  fecha date not null default current_date,
+  registrado_por uuid references public.profiles(id),
+  created_at timestamptz not null default now()
+);
+
+alter table public.mantenciones enable row level security;
+
+-- Mismo patron que 'documentos': el conductor puede ver el historial de su
+-- propio vehiculo, el admin/superadmin gestiona todo lo de su empresa.
+create policy "ver mantenciones segun acceso al vehiculo" on public.mantenciones
+  for select using (
+    exists (
+      select 1 from public.vehiculos v
+      where v.id = vehiculo_id
+      and (v.conductor_id = auth.uid()
+        or (public.my_rol() in ('admin','superadmin') and exists (
+          select 1 from public.flotas f where f.id = v.flota_id and (f.empresa_id = public.my_empresa() or public.my_rol() = 'superadmin')
+        )))
+    )
+  );
+
+create policy "admin gestiona mantenciones" on public.mantenciones
+  for all using (
+    public.my_rol() in ('admin','superadmin') and
+    exists (
+      select 1 from public.vehiculos v
+      join public.flotas f on f.id = v.flota_id
+      where v.id = vehiculo_id and (f.empresa_id = public.my_empresa() or public.my_rol() = 'superadmin')
+    )
+  );

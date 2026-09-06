@@ -72,7 +72,9 @@ export function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-text/50 p-4"
+      // Scrim intencionalmente en negro crudo (no --color-text): tiene que
+      // quedar oscuro en los dos modos, y --color-text se vuelve claro en dark.
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onClick={onCancelar}
     >
       <div
@@ -82,7 +84,7 @@ export function ConfirmDialog({
         aria-labelledby={tituloId}
         aria-describedby={descripcionId}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-sm space-y-5 rounded-lg border-2 border-border bg-bg-card p-5 shadow-sm sm:p-6"
+        className="w-full max-w-sm space-y-5 rounded-lg border border-border-subtle bg-bg-card p-5 shadow-sm sm:p-6"
       >
         <div className="flex items-start gap-3">
           <AlertTriangle

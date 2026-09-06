@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdminAction, type AdminSupabaseClient } from "@/lib/supabase/admin-context";
 import { esTipoDocumentoValido } from "@/lib/documentos";
+import { esTipoMantencionValido } from "@/lib/mantenciones";
 import { detectarMimeReal, EXTENSION_POR_MIME } from "@/lib/validar-archivo";
 
 export interface ActionState {
@@ -462,4 +463,105 @@ export async function obtenerUrlDocumento(
   if (error || !data) return { error: "No se pudo generar el enlace del documento." };
 
   return { url: data.signedUrl };
+}
+
+export async function crearMantencion(
+  flotaId: string,
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const ctx = await requireAdminAction();
+  if (!ctx) return { error: "No autorizado." };
+
+  const vehiculoId = String(formData.get("vehiculo_id") ?? "");
+  if (!vehiculoId) return { error: "Elegí para qué vehículo es." };
+
+  // El vehiculo tiene que ser de ESTA flota (no cualquiera de la empresa):
+  // el selector del form solo debería ofrecer vehiculos de flotaId, pero no
+  // confiamos en eso del lado del cliente.
+  const flotaDelVehiculo = await verificarVehiculoDeEmpresa(ctx.supabase, vehiculoId, ctx.empresaId);
+  if (!flotaDelVehiculo || flotaDelVehiculo !== flotaId) return { error: "No autorizado." };
+
+  const tipo = String(formData.get("tipo") ?? "");
+  if (!esTipoMantencionValido(tipo)) return { error: "Elegí un tipo válido." };
+
+  const descripcion = String(formData.get("descripcion") ?? "").trim();
+  if (!descripcion) return { error: "La descripción es obligatoria." };
+
+  const kmRaw = String(formData.get("km") ?? "").trim();
+  let km: number | null = null;
+  if (kmRaw !== "") {
+    km = Number(kmRaw);
+    if (!Number.isInteger(km) || km < 0) {
+      return { error: "El km debe ser un número entero válido." };
+    }
+  }
+
+  // Registrar una mantención con km resetea el contador de mantención del
+  // vehículo (km_ultima_mantencion), y de paso actualiza km_actual si el km
+  // ingresado es más nuevo — así el aviso de "por vencer/vencido" se limpia
+  // solo, sin tener que ir a editar el vehículo a mano. Un repuesto no toca
+  // el contador: es solo un registro histórico.
+  if (tipo === "mantencion" && km !== null) {
+    const { data: vehiculo } = await ctx.supabase
+      .from("vehiculos")
+      .select("km_actual")
+      .eq("id", vehiculoId)
+      .maybeSingle();
+
+    if (vehiculo && km < vehiculo.km_actual) {
+      return {
+        error: `El km no puede ser menor al kilometraje actual del vehículo (${vehiculo.km_actual.toLocaleString("es-CL")} km).`,
+      };
+    }
+
+    const { error: errorVehiculo } = await ctx.supabase
+      .from("vehiculos")
+      .update({ km_actual: km, km_ultima_mantencion: km })
+      .eq("id", vehiculoId);
+
+    if (errorVehiculo) return { error: "No se pudo actualizar el kilometraje del vehículo." };
+  }
+
+  const { error } = await ctx.supabase.from("mantenciones").insert({
+    vehiculo_id: vehiculoId,
+    tipo,
+    descripcion,
+    km,
+    registrado_por: ctx.userId,
+  });
+
+  if (error) return { error: "No se pudo guardar el registro." };
+
+  revalidatePath(`/dashboard/${flotaId}`);
+  revalidatePath(`/dashboard/${flotaId}/avisos`);
+  revalidatePath(`/dashboard/${flotaId}/mantenciones`);
+  revalidatePath(`/dashboard/flotas/${flotaId}`);
+  return {};
+}
+
+export async function eliminarMantencion(
+  mantencionId: string,
+  _prevState: ActionState,
+  _formData: FormData,
+): Promise<ActionState> {
+  const ctx = await requireAdminAction();
+  if (!ctx) return { error: "No autorizado." };
+
+  const { data: registro } = await ctx.supabase
+    .from("mantenciones")
+    .select("vehiculo_id")
+    .eq("id", mantencionId)
+    .maybeSingle();
+
+  if (!registro) return { error: "No autorizado." };
+
+  const flotaId = await verificarVehiculoDeEmpresa(ctx.supabase, registro.vehiculo_id, ctx.empresaId);
+  if (!flotaId) return { error: "No autorizado." };
+
+  const { error } = await ctx.supabase.from("mantenciones").delete().eq("id", mantencionId);
+  if (error) return { error: "No se pudo eliminar el registro." };
+
+  revalidatePath(`/dashboard/${flotaId}/mantenciones`);
+  return {};
 }

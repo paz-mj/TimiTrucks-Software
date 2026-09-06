@@ -22,7 +22,7 @@ export function CrearFlotaForm() {
     <form
       ref={formRef}
       action={formAction}
-      className="space-y-3 rounded-lg border-2 border-border bg-bg-card p-4 sm:p-5"
+      className="space-y-3 rounded-lg border border-border-subtle bg-bg-card p-4 shadow-sm sm:p-5"
     >
       <h2 className="text-lg font-medium text-text">Crear flota</h2>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">

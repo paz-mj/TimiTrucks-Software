@@ -45,7 +45,7 @@ export function SubirDocumentoForm({ vehiculoId }: { vehiculoId: string }) {
     <form
       ref={formRef}
       action={formAction}
-      className="space-y-4 rounded-lg border-2 border-border bg-bg-card p-4 sm:p-5"
+      className="space-y-4 rounded-lg border border-border-subtle bg-bg-card p-4 shadow-sm sm:p-5"
     >
       <h4 className="text-base font-medium text-text">Subir documento</h4>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -58,7 +58,7 @@ export function SubirDocumentoForm({ vehiculoId }: { vehiculoId: string }) {
             name="tipo"
             required
             defaultValue=""
-            className="min-h-11 w-full rounded-md border-2 border-border-strong bg-bg-card px-3 py-2 text-base text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            className="min-h-11 w-full rounded-md border-2 border-border-strong bg-bg-card px-3 py-2 text-base text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             <option value="" disabled>
               Seleccioná un tipo

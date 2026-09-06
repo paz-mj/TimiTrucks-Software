@@ -4,30 +4,66 @@
  * Sistema de diseño — Flota Tracker
  * Usuario final principal (admin) tiene poco manejo de tecnología y
  * probablemente vista cansada: priorizamos legibilidad y contraste alto
- * por sobre estética minimalista. Un solo tema (sin modo oscuro) para
- * mantener todo simple y predecible.
+ * por sobre estética minimalista.
+ *
+ * Dark mode por clase: `.dark` en <html> (toggleado por DarkModeToggle,
+ * persistido en localStorage) reasigna las mismas variables de --theme más
+ * abajo. Como todos los componentes ya usan tokens semánticos (bg-bg-card,
+ * text-text, border-border-strong...) y nunca colores crudos de Tailwind,
+ * el modo oscuro sale gratis para ellos: no hace falta escribir `dark:` en
+ * cada componente, alcanza con redefinir el valor del token una vez acá.
  */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
-  /* Paleta core */
-  --color-primary: #3e5c76;
-  --color-primary-hover: #2c4356;
+  /* Marca: azul, en vez del verde de la referencia (regla de negocio). El
+     mismo hex se usa en light y dark para los fills con texto blanco encima
+     (Button) — ver más abajo por qué el texto/ícono de acento sí cambia. */
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+
+  /* Texto/ícono de acento (links, ítem activo del sidebar, stepper): en light
+     es el mismo azul de marca, pero en dark necesita un tono más claro para
+     mantener 4.5:1 contra fondos oscuros — por eso es un token aparte de
+     --color-primary y no un alias. */
+  --color-accent: #2563eb;
+  --color-accent-bg: #eff6ff;
+
   --color-text: #1e293b;
   --color-text-secondary: #45556c;
   --color-bg: #f8fafc;
   --color-bg-card: #ffffff;
+
+  /* --color-border: separadores internos de una tarjeta (border-t-2, etc),
+     deliberadamente tenue — el límite lo da el espaciado, no el borde.
+     --color-border-strong: inputs y elementos interactivos, alto contraste.
+     --color-border-subtle: borde de 1px de las tarjetas del dashboard nuevo
+     (grid, sidebar, topbar) — look "borde sutil + sombra" de la referencia.
+     Es una tercera categoría a propósito: no reemplaza a border-strong en
+     inputs/botones, que necesitan seguir leyéndose como interactivos. */
   --color-border: #cbd5e1;
   --color-border-strong: #64748b;
+  --color-border-subtle: #e2e8f0;
 
   /* Estados: verde / ámbar / rojo, elegidos para que además de distinguirse
      por matiz, se distingan por luminosidad en escala de grises. Nunca se
-     usan solos — siempre van con ícono + texto (ver EstadoBadge). */
+     usan solos — siempre van con ícono + texto (ver EstadoBadge). Semántica
+     fija: NO se reemplazan por azul, y no cambian de significado en dark. */
   --color-success: #166534;
   --color-success-bg: #dcfce7;
   --color-warning: #a3450a;
   --color-warning-bg: #fef3c7;
+  --color-danger-bg: #fee2e2;
+
+  /* --color-danger es el fill de Button (rojo sólido + texto blanco encima),
+     mode-independiente porque esa combinación ya tiene contraste de sobra en
+     los dos modos. --color-danger-text es para texto/ícono de peligro sobre
+     el fondo de la página (FormError, EstadoBadge, ícono de eliminar): ese
+     uso sí necesita un rojo más claro en dark para llegar a 4.5:1, por eso
+     son dos tokens separados en vez de reusar uno para ambos casos. */
   --color-danger: #b91c1c;
   --color-danger-hover: #991b1b;
-  --color-danger-bg: #fee2e2;
+  --color-danger-text: #b91c1c;
 
   /* Tipografía: Inter, escala en rem para respetar el zoom del navegador.
      Base = 18px (1.125rem), nunca bajamos de 14px ni siquiera en metadata. */
@@ -48,6 +84,44 @@
   --text-2xl--line-height: 2.375rem;
   --text-3xl: 2.25rem;
   --text-3xl--line-height: 2.75rem;
+}
+
+/* Valores de dark mode: misma escala slate invertida. Cada combinación text/
+   bg de acá fue verificada con un chequeo de contraste WCAG (mínimo 4.5:1
+   para texto, 3:1 para bordes de componentes UI) antes de fijarla. */
+:root.dark {
+  --color-accent: #60a5fa;
+  --color-accent-bg: #203662;
+
+  --color-text: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-bg: #0f172a;
+  --color-bg-card: #1e293b;
+
+  /* border-subtle sube de tono respecto a light: en un fondo oscuro el
+     box-shadow casi no se nota, así que el borde solo tiene que cargar un
+     poco más de la definición visual de la tarjeta. */
+  --color-border: #334155;
+  --color-border-strong: #94a3b8;
+  --color-border-subtle: #64748b;
+
+  --color-success: #4ade80;
+  --color-success-bg: #1f4541;
+  --color-warning: #fbbf24;
+  --color-warning-bg: #453e32;
+  --color-danger-bg: #372c3c;
+  --color-danger-text: #f87171;
+}
+
+/* color-scheme: además de los bg-bg-card explícitos en cada input/select/
+   textarea, esto hace que el chrome nativo que no controlamos con clases
+   (menú desplegable de un <select>, scrollbar, autofill) también sea oscuro
+   en vez de quedar con el blanco por defecto del navegador. */
+:root {
+  color-scheme: light;
+}
+:root.dark {
+  color-scheme: dark;
 }
 
 body {

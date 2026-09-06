@@ -35,7 +35,7 @@ export function EliminarVehiculoButton({
           disabled={isPending}
           onClick={() => setConfirmando(true)}
         >
-          <Trash2 size={18} className="text-danger" aria-hidden="true" />
+          <Trash2 size={18} className="text-danger-text" aria-hidden="true" />
           {isPending ? "Eliminando..." : "Eliminar"}
         </Button>
         <FormError message={state.error} />

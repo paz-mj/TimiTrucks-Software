@@ -38,7 +38,7 @@ export function AsignarConductorForm({
             id={selectId}
             name="conductor_id"
             defaultValue={conductorActualId ?? ""}
-            className="min-h-11 w-full rounded-md border-2 border-border-strong bg-bg-card px-3 py-2 text-base text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            className="min-h-11 w-full rounded-md border-2 border-border-strong bg-bg-card px-3 py-2 text-base text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             <option value="">Sin asignar</option>
             {conductoresDisponibles.map((conductor) => (

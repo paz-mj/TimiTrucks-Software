@@ -28,7 +28,7 @@ export function ObservacionesForm({ vehiculoId, observaciones }: ObservacionesFo
         rows={3}
         defaultValue={observaciones ?? ""}
         placeholder="Notas internas sobre este vehículo (opcional)"
-        className="w-full rounded-md border-2 border-border-strong px-3 py-2 text-base text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        className="w-full rounded-md border-2 border-border-strong bg-bg-card px-3 py-2 text-base text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       />
       <FormError message={state.error} />
       <Button type="submit" variant="secondary" disabled={isPending}>

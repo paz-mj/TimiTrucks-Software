@@ -14,7 +14,7 @@ export function FormField({ label, name, className = "", ...props }: FormFieldPr
       <input
         id={name}
         name={name}
-        className={`min-h-11 w-full rounded-md border-2 border-border-strong px-3 py-2 text-base text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${className}`}
+        className={`min-h-11 w-full rounded-md border-2 border-border-strong bg-bg-card px-3 py-2 text-base text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${className}`}
         {...props}
       />
     </div>

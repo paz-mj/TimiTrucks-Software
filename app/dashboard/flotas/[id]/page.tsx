@@ -1,8 +1,5 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import { requireAdminPage } from "@/lib/supabase/admin-context";
-import { AppHeader } from "@/components/AppHeader";
 import { CrearVehiculoForm } from "@/components/flotas/CrearVehiculoForm";
 import { VehiculoRow } from "@/components/flotas/VehiculoRow";
 import type { TipoDocumento } from "@/types/database.types";
@@ -90,47 +87,38 @@ export default async function FlotaDetailPage({
 
   return (
     <>
-      <AppHeader titulo={flota.nombre} />
-      <main className="space-y-6 p-4 sm:p-6">
-        <Link
-          href="/dashboard"
-          className="inline-flex min-h-11 items-center gap-1.5 text-base font-medium text-primary"
-        >
-          <ArrowLeft size={20} aria-hidden="true" />
-          Volver a flotas
-        </Link>
+      <h2 className="text-xl font-semibold text-text">{flota.nombre}</h2>
 
-        <section className="space-y-3">
-          <h2 className="text-lg font-medium text-text">Vehículos</h2>
+      <section className="space-y-3">
+        <h2 className="text-lg font-medium text-text">Vehículos</h2>
 
-          {!vehiculos || vehiculos.length === 0 ? (
-            <p className="text-base text-text-secondary">
-              Esta flota todavía no tiene vehículos.
-            </p>
-          ) : (
-            <ul className="space-y-3">
-              {vehiculos.map((vehiculo) => {
-                const conductoresDisponibles = (conductores ?? []).filter(
-                  (c) =>
-                    !vehiculoAsignadoDe.has(c.id) ||
-                    vehiculoAsignadoDe.get(c.id) === vehiculo.id,
-                );
+        {!vehiculos || vehiculos.length === 0 ? (
+          <p className="text-base text-text-secondary">
+            Esta flota todavía no tiene vehículos.
+          </p>
+        ) : (
+          <ul className="space-y-3">
+            {vehiculos.map((vehiculo) => {
+              const conductoresDisponibles = (conductores ?? []).filter(
+                (c) =>
+                  !vehiculoAsignadoDe.has(c.id) ||
+                  vehiculoAsignadoDe.get(c.id) === vehiculo.id,
+              );
 
-                return (
-                  <VehiculoRow
-                    key={vehiculo.id}
-                    vehiculo={vehiculo}
-                    conductoresDisponibles={conductoresDisponibles}
-                    documentos={documentosPorVehiculo.get(vehiculo.id) ?? []}
-                  />
-                );
-              })}
-            </ul>
-          )}
-        </section>
+              return (
+                <VehiculoRow
+                  key={vehiculo.id}
+                  vehiculo={vehiculo}
+                  conductoresDisponibles={conductoresDisponibles}
+                  documentos={documentosPorVehiculo.get(vehiculo.id) ?? []}
+                />
+              );
+            })}
+          </ul>
+        )}
+      </section>
 
-        <CrearVehiculoForm flotaId={flota.id} />
-      </main>
+      <CrearVehiculoForm flotaId={flota.id} />
     </>
   );
 }

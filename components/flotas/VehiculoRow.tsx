@@ -44,7 +44,7 @@ export function VehiculoRow({ vehiculo, conductoresDisponibles, documentos }: Ve
 
   if (editando) {
     return (
-      <li className="rounded-lg border-2 border-border bg-bg-card p-4 sm:p-5">
+      <li className="rounded-lg border border-border-subtle bg-bg-card p-4 shadow-sm sm:p-5">
         <EditarVehiculoForm
           vehiculo={vehiculo}
           onCancelar={() => setEditando(false)}
@@ -59,7 +59,7 @@ export function VehiculoRow({ vehiculo, conductoresDisponibles, documentos }: Ve
     .join(" ");
 
   return (
-    <li className="space-y-4 rounded-lg border-2 border-border bg-bg-card p-4 sm:p-5">
+    <li className="space-y-4 rounded-lg border border-border-subtle bg-bg-card p-4 shadow-sm sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <FotoVehiculo
