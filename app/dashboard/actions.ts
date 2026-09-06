@@ -11,6 +11,8 @@ export interface ActionState {
 
 const ANIO_MINIMO = 1950;
 const TAMANO_MAXIMO_ARCHIVO = 5 * 1024 * 1024; // 5MB
+const TAMANO_MAXIMO_FOTO = 2 * 1024 * 1024; // 2MB
+const MIME_FOTO_PERMITIDOS = ["image/jpeg", "image/png"];
 
 function parsePatente(formData: FormData) {
   return String(formData.get("patente") ?? "")
@@ -230,6 +232,92 @@ export async function eliminarVehiculo(
 
   const { error } = await ctx.supabase.from("vehiculos").delete().eq("id", vehiculoId);
   if (error) return { error: "No se pudo eliminar el vehículo." };
+
+  revalidatePath(`/dashboard/flotas/${flotaId}`);
+  return {};
+}
+
+export async function subirFotoVehiculo(
+  vehiculoId: string,
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const ctx = await requireAdminAction();
+  if (!ctx) return { error: "No autorizado." };
+
+  const flotaId = await verificarVehiculoDeEmpresa(ctx.supabase, vehiculoId, ctx.empresaId);
+  if (!flotaId) return { error: "No autorizado." };
+
+  const archivo = formData.get("foto");
+  if (!(archivo instanceof File) || archivo.size === 0) {
+    return { error: "Tenés que seleccionar una imagen." };
+  }
+
+  if (archivo.size > TAMANO_MAXIMO_FOTO) {
+    return { error: "La imagen no puede pesar más de 2MB." };
+  }
+
+  // No confiamos en archivo.type ni en la extensión: miramos los primeros
+  // bytes del archivo, igual que con los documentos.
+  const mimeReal = await detectarMimeReal(archivo);
+  if (!mimeReal || !MIME_FOTO_PERMITIDOS.includes(mimeReal)) {
+    return { error: "Solo se aceptan imágenes JPG o PNG." };
+  }
+  const extension = EXTENSION_POR_MIME[mimeReal];
+
+  const base = `${ctx.empresaId}/${vehiculoId}`;
+  const path = `${base}.${extension}`;
+
+  // Borramos cualquier foto anterior antes de subir: puede tener otra
+  // extensión (ej. reemplazar un .png por un .jpg), así que no alcanza con
+  // sobreescribir el mismo path.
+  await ctx.supabase.storage.from("fotos-vehiculos").remove([`${base}.jpg`, `${base}.png`]);
+
+  const { error: errorStorage } = await ctx.supabase.storage
+    .from("fotos-vehiculos")
+    .upload(path, archivo, { contentType: mimeReal, upsert: false });
+
+  if (errorStorage) return { error: "No se pudo subir la imagen." };
+
+  const {
+    data: { publicUrl },
+  } = ctx.supabase.storage.from("fotos-vehiculos").getPublicUrl(path);
+
+  // Cache-busting: si se reemplaza una foto con la misma extensión, el path
+  // no cambia, y sin esto el navegador podría seguir mostrando la imagen
+  // vieja cacheada bajo la misma URL.
+  const fotoUrl = `${publicUrl}?v=${Date.now()}`;
+
+  const { error: errorUpdate } = await ctx.supabase
+    .from("vehiculos")
+    .update({ foto_url: fotoUrl })
+    .eq("id", vehiculoId);
+
+  if (errorUpdate) return { error: "No se pudo guardar la foto del vehículo." };
+
+  revalidatePath(`/dashboard/flotas/${flotaId}`);
+  return {};
+}
+
+export async function actualizarObservaciones(
+  vehiculoId: string,
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const ctx = await requireAdminAction();
+  if (!ctx) return { error: "No autorizado." };
+
+  const flotaId = await verificarVehiculoDeEmpresa(ctx.supabase, vehiculoId, ctx.empresaId);
+  if (!flotaId) return { error: "No autorizado." };
+
+  const observaciones = String(formData.get("observaciones") ?? "").trim() || null;
+
+  const { error } = await ctx.supabase
+    .from("vehiculos")
+    .update({ observaciones })
+    .eq("id", vehiculoId);
+
+  if (error) return { error: "No se pudieron guardar las observaciones." };
 
   revalidatePath(`/dashboard/flotas/${flotaId}`);
   return {};

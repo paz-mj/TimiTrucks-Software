@@ -91,6 +91,8 @@ export interface Database {
           km_actual: number;
           km_ultima_mantencion: number;
           intervalo_mantencion_km: number;
+          foto_url: string | null;
+          observaciones: string | null;
           created_at: string;
         };
         Insert: {
@@ -104,6 +106,8 @@ export interface Database {
           km_actual?: number;
           km_ultima_mantencion?: number;
           intervalo_mantencion_km?: number;
+          foto_url?: string | null;
+          observaciones?: string | null;
           created_at?: string;
         };
         Update: {
@@ -117,6 +121,8 @@ export interface Database {
           km_actual?: number;
           km_ultima_mantencion?: number;
           intervalo_mantencion_km?: number;
+          foto_url?: string | null;
+          observaciones?: string | null;
           created_at?: string;
         };
         Relationships: [];

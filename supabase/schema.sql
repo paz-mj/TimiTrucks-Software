@@ -296,3 +296,40 @@ create policy "admin elimina documentos de su empresa" on storage.objects
       or (storage.foldername(name))[1] = public.my_empresa()::text
     )
   );
+
+-- ============ ALTER: foto_url y observaciones en vehiculos ============
+alter table public.vehiculos add column if not exists foto_url text;
+alter table public.vehiculos add column if not exists observaciones text;
+
+-- ============ STORAGE: bucket 'fotos-vehiculos' ============
+-- Convencion de path del objeto: {empresa_id}/{vehiculo_id}.{ext}
+-- (storage.foldername(name))[1] es el empresa_id del objeto, igual que en
+-- el bucket 'documentos'. A diferencia de 'documentos', este bucket es
+-- publico de lectura: la foto de un vehiculo no es informacion sensible,
+-- es solo identificacion visual, asi que evitamos la complejidad de URLs
+-- firmadas para algo que no las necesita. El bucket 'fotos-vehiculos' se
+-- crea manualmente desde el dashboard de Supabase con "Public bucket"
+-- activado (igual que 'documentos', no se crea por SQL).
+
+create policy "cualquiera lee fotos de vehiculos" on storage.objects
+  for select using (bucket_id = 'fotos-vehiculos');
+
+create policy "admin sube fotos de su empresa" on storage.objects
+  for insert with check (
+    bucket_id = 'fotos-vehiculos'
+    and public.my_rol() in ('admin', 'superadmin')
+    and (
+      public.my_rol() = 'superadmin'
+      or (storage.foldername(name))[1] = public.my_empresa()::text
+    )
+  );
+
+create policy "admin elimina fotos de su empresa" on storage.objects
+  for delete using (
+    bucket_id = 'fotos-vehiculos'
+    and public.my_rol() in ('admin', 'superadmin')
+    and (
+      public.my_rol() = 'superadmin'
+      or (storage.foldername(name))[1] = public.my_empresa()::text
+    )
+  );

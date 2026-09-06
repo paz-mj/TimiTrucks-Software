@@ -7,6 +7,9 @@ import { EditarVehiculoForm } from "@/components/flotas/EditarVehiculoForm";
 import { EliminarVehiculoButton } from "@/components/flotas/EliminarVehiculoButton";
 import { AsignarConductorForm } from "@/components/flotas/AsignarConductorForm";
 import { DocumentosSection } from "@/components/flotas/DocumentosSection";
+import { FotoVehiculo } from "@/components/flotas/FotoVehiculo";
+import { SubirFotoVehiculoForm } from "@/components/flotas/SubirFotoVehiculoForm";
+import { ObservacionesForm } from "@/components/flotas/ObservacionesForm";
 import type { TipoDocumento } from "@/types/database.types";
 
 interface Conductor {
@@ -29,6 +32,8 @@ interface VehiculoRowProps {
     anio: number | null;
     intervalo_mantencion_km: number;
     conductor_id: string | null;
+    foto_url: string | null;
+    observaciones: string | null;
   };
   conductoresDisponibles: Conductor[];
   documentos: Documento[];
@@ -56,12 +61,19 @@ export function VehiculoRow({ vehiculo, conductoresDisponibles, documentos }: Ve
   return (
     <li className="space-y-4 rounded-lg border-2 border-border bg-bg-card p-4 sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-lg font-semibold text-text">{vehiculo.patente}</p>
-          <p className="text-base text-text-secondary">{detalle || "Sin datos de marca/modelo"}</p>
-          <p className="text-sm text-text-secondary">
-            Mantención cada {vehiculo.intervalo_mantencion_km.toLocaleString("es-CL")} km
-          </p>
+        <div className="flex items-center gap-3">
+          <FotoVehiculo
+            fotoUrl={vehiculo.foto_url}
+            patente={vehiculo.patente}
+            className="h-14 w-14"
+          />
+          <div>
+            <p className="text-lg font-semibold text-text">{vehiculo.patente}</p>
+            <p className="text-base text-text-secondary">{detalle || "Sin datos de marca/modelo"}</p>
+            <p className="text-sm text-text-secondary">
+              Mantención cada {vehiculo.intervalo_mantencion_km.toLocaleString("es-CL")} km
+            </p>
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" onClick={() => setEditando(true)}>
@@ -78,6 +90,18 @@ export function VehiculoRow({ vehiculo, conductoresDisponibles, documentos }: Ve
           conductorActualId={vehiculo.conductor_id}
           conductoresDisponibles={conductoresDisponibles}
         />
+      </div>
+
+      <div className="border-t-2 border-border pt-4">
+        <SubirFotoVehiculoForm
+          vehiculoId={vehiculo.id}
+          patente={vehiculo.patente}
+          fotoUrl={vehiculo.foto_url}
+        />
+      </div>
+
+      <div className="border-t-2 border-border pt-4">
+        <ObservacionesForm vehiculoId={vehiculo.id} observaciones={vehiculo.observaciones} />
       </div>
 
       <DocumentosSection vehiculoId={vehiculo.id} documentos={documentos} />

@@ -33,7 +33,9 @@ export default async function FlotaDetailPage({
 
   const { data: vehiculos } = await supabase
     .from("vehiculos")
-    .select("id, patente, marca, modelo, anio, intervalo_mantencion_km, conductor_id")
+    .select(
+      "id, patente, marca, modelo, anio, intervalo_mantencion_km, conductor_id, foto_url, observaciones",
+    )
     .eq("flota_id", flota.id)
     .order("patente");
 
